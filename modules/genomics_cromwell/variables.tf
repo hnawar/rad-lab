@@ -1,22 +1,63 @@
-//Common Variables
+/**
+ * Copyright 2021 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-variable "network_name" {
-  type = string
+variable "billing_account_id" {
+  description = "Billing Account associated to the GCP Resources"
+  type        = string
+}
+variable "create_project" {
+  description = "Set to true if the module has to create a project.  If you want to deploy in an existing project, set this variable to false."
+  type        = bool
+  default     = true
+}
+variable "cromwell_db_name" {
+  description = "The name of the SQL Database instance"
+  default     = "cromwelldb"
+}
+
+
+variable "cromwell_db_pass" {
+  description = "Cromwell database user password, a random passwrod is generated."
+  type        = string
+  default     = null
+}
+
+variable "cromwell_db_tier" {
+  Descdescription = "CloudSQL tier, please refere to the documentation at https://cloud.google.com/sql/docs/mysql/instance-settings#machine-type-2ndgen ."
+  type            = string
+  default         = "db-n1-standard-2"
 
 }
-variable "project_id" {
-  type = string
+variable "cromwell_PAPI_endpoint" {
+  Description = "Endpoint for Life Sciences APIs. For locations other than us-central1, the endpoint needs to be updated to match the location For example for \"europe-west4\" location the endpoint-url should be \"https://europe-west4-lifesciences.googleapi/\""
+  type        = string
+  default     = "https://lifesciences.googleapis.com"
 }
-variable "default_region" {
-  type = string
+variable "cromwell_PAPI_location" {
+  Description = "Google Cloud region or multi-region where the Life Sciences API endpoint will be used. This does not affect where worker instances or data will be stored."
+  type        = string
+  Default     = "us-central1"
 }
-variable "default_zone" {
-  type = string
+variable "cromwell_port" {
+  Description = "Port Cromwell server will use for the REST API and web user interface."
+  type        = string
+  default     = "us-central1"
 }
-
-
 variable "cromwell_sa_roles" {
-  description = "List of roles granted to the cromwell service account."
+  description = "List of roles granted to the cromwell service account. This server account will be used to run both the Cromwell server and workers as well."
   type        = list(any)
   default = [
     "roles/lifesciences.workflowsRunner",
@@ -26,46 +67,60 @@ variable "cromwell_sa_roles" {
   ]
 }
 
-//Cromwell server specific variables
 variable "cromwell_server_instance_name" {
-  type = string
+  Description = "Name of the VM instance that will be used to deploy Cromwell Server, this should be a valid Google Cloud instance name."
+  type        = string
+  default     = "cromwell-server"
 }
 variable "cromwell_server_instance_type" {
-  type = string
+  Description = "Cromwell server instance type"
+  type        = string
+  defautl     = "e2-standard-4"
 }
-
-variable "cromwell_port" {
-  type = string
-}
-
-variable "cromwell_db_name" {
-  description = "The name of the SQL Database instance"
-  default     = "cromwelldb"
-}
-
 variable "cromwell_version" {
-  type    = string
-  default = "72"
+  description = "Cromwell version that will be downloaded, for the latest release version, please check https://github.com/broadinstitute/cromwell/releases for the latest releases."
+  type        = string
+  default     = "72"
 
 }
 
-variable "cromwell_db_tier" {
-  type = string
-
-}
-
-variable "cromwell_db_pass" {
-  type = string
-}
 
 variable "cromwell_zones" {
-  type = string
+  description = "GCP Zones that will be set as the default runtime in Cromwell config file."
+  type        = list(any)
+  default     = ["us-central1-a", "us-central1-b"]
 }
 
-variable "cromwell_PAPI_location" {
-  type = string
+
+variable "default_region" {
+  description = "The default region where the CloudSQL, Compute Instance and VPCs will be deployed"
+  type        = string
+  default     = "us-cenrtal1"
+}
+variable "default_zone" {
+  description = "The default zone where the CloudSQL, Compute Instance be deployed"
+  type        = string
 }
 
-variable "cromwell_PAPI_endpoint" {
-  type = string
+variable "network_name" {
+  Description = "This name will be used for VPC and subnets created"
+  type        = string
+  default     = "cromwell-vpc"
+}
+
+variable "organization_id" {
+  description = "Organization ID where GCP Resources need to get spin up. It can be skipped if already setting folder_id"
+  type        = string
+  default     = ""
+}
+variable "project_name" {
+  description = "Project name or ID, if it's an existing project."
+  type        = string
+  default     = "radlab-gen-cromwell"
+}
+
+variable "random_id" {
+  description = "Adds a suffix of 4 random characters to the `project_id`"
+  type        = string
+  default     = null
 }

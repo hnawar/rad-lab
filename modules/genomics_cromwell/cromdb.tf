@@ -24,12 +24,12 @@ module "cromwell-mysql-db" {
     }
   ]
 
-  ip_configuration =  {
-      ipv4_enabled    = false,
-      private_network = google_compute_network.vpc_network.self_link,
-      authorized_networks = [],
-      require_ssl = false
-    }
+  ip_configuration = {
+    ipv4_enabled        = false,
+    private_network     = google_compute_network.vpc_network.self_link,
+    authorized_networks = [],
+    require_ssl         = false
+  }
 
   // Optional: used to enforce ordering in the creation of resources.
   module_depends_on = [module.private-service-access.peering_completed]
