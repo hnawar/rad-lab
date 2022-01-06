@@ -1,16 +1,20 @@
 
+resource "random_password" "cromwell_db_pass" {
+  length  = 16
+  special = false
+}
 module "cromwell-mysql-db" {
   source  = "GoogleCloudPlatform/sql-db/google//modules/mysql"
   version = "8.0.0"
 
 
   name       = var.cromwell_db_name
-  project_id = var.project_id
+  project_id = local.project.project_id
 
   deletion_protection = false
 
   database_version = "MYSQL_8_0"
-  region           = var.default_region
+  region           = local.region
   zone             = var.default_zone
   tier             = var.cromwell_db_tier
 
@@ -20,13 +24,13 @@ module "cromwell-mysql-db" {
   additional_users = [
     {
       name     = "cromwell"
-      password = var.cromwell_db_pass
+      password = random_password.cromwell_db_pass.result
     }
   ]
 
   ip_configuration = {
     ipv4_enabled        = false,
-    private_network     = google_compute_network.vpc_network.self_link,
+    private_network     = module.vpc_cromwell.0.network_self_link,
     authorized_networks = [],
     require_ssl         = false
   }
