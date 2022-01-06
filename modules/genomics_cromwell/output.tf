@@ -3,10 +3,6 @@ output "Cromell_server_internal_IP" {
 
 }
 
-output "Cromwell_DB_Private_IP" {
-  value = module.cromwell-mysql-db.instance_ip_address[0].ip_address
-}
-
 output "Cromwell_service_account_email" {
   value = google_service_account.cromwell_service_account.email
 }
