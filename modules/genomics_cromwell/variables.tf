@@ -18,6 +18,12 @@ variable "billing_account_id" {
   description = "Billing Account associated to the GCP Resources"
   type        = string
 }
+variable "create_network" {
+  description = "If the module has to be deployed in an existing network, set this variable to false."
+  type        = bool
+  default     = true
+}
+
 variable "create_project" {
   description = "Set to true if the module has to create a project.  If you want to deploy in an existing project, set this variable to false."
   type        = bool
@@ -28,31 +34,24 @@ variable "cromwell_db_name" {
   default     = "cromwelldb"
 }
 
-
-variable "cromwell_db_pass" {
-  description = "Cromwell database user password, a random passwrod is generated."
-  type        = string
-  default     = null
-}
-
 variable "cromwell_db_tier" {
-  Descdescription = "CloudSQL tier, please refere to the documentation at https://cloud.google.com/sql/docs/mysql/instance-settings#machine-type-2ndgen ."
-  type            = string
-  default         = "db-n1-standard-2"
+  description = "CloudSQL tier, please refere to the documentation at https://cloud.google.com/sql/docs/mysql/instance-settings#machine-type-2ndgen ."
+  type        = string
+  default     = "db-n1-standard-2"
 
 }
 variable "cromwell_PAPI_endpoint" {
-  Description = "Endpoint for Life Sciences APIs. For locations other than us-central1, the endpoint needs to be updated to match the location For example for \"europe-west4\" location the endpoint-url should be \"https://europe-west4-lifesciences.googleapi/\""
+  description = "Endpoint for Life Sciences APIs. For locations other than us-central1, the endpoint needs to be updated to match the location For example for \"europe-west4\" location the endpoint-url should be \"https://europe-west4-lifesciences.googleapi/\""
   type        = string
   default     = "https://lifesciences.googleapis.com"
 }
 variable "cromwell_PAPI_location" {
-  Description = "Google Cloud region or multi-region where the Life Sciences API endpoint will be used. This does not affect where worker instances or data will be stored."
+  description = "Google Cloud region or multi-region where the Life Sciences API endpoint will be used. This does not affect where worker instances or data will be stored."
   type        = string
-  Default     = "us-central1"
+  default     = "us-central1"
 }
 variable "cromwell_port" {
-  Description = "Port Cromwell server will use for the REST API and web user interface."
+  description = "Port Cromwell server will use for the REST API and web user interface."
   type        = string
   default     = "us-central1"
 }
@@ -68,14 +67,14 @@ variable "cromwell_sa_roles" {
 }
 
 variable "cromwell_server_instance_name" {
-  Description = "Name of the VM instance that will be used to deploy Cromwell Server, this should be a valid Google Cloud instance name."
+  description = "Name of the VM instance that will be used to deploy Cromwell Server, this should be a valid Google Cloud instance name."
   type        = string
   default     = "cromwell-server"
 }
 variable "cromwell_server_instance_type" {
-  Description = "Cromwell server instance type"
+  description = "Cromwell server instance type"
   type        = string
-  defautl     = "e2-standard-4"
+  default     = "e2-standard-4"
 }
 variable "cromwell_version" {
   description = "Cromwell version that will be downloaded, for the latest release version, please check https://github.com/broadinstitute/cromwell/releases for the latest releases."
@@ -90,7 +89,11 @@ variable "cromwell_zones" {
   type        = list(any)
   default     = ["us-central1-a", "us-central1-b"]
 }
-
+variable "db_service_network_cidr_range" {
+  description = "CIDR range used for the private service range for CloudSQL"
+  type        = string
+  default     = "172.16.50.0/28"
+}
 
 variable "default_region" {
   description = "The default region where the CloudSQL, Compute Instance and VPCs will be deployed"
@@ -101,9 +104,25 @@ variable "default_zone" {
   description = "The default zone where the CloudSQL, Compute Instance be deployed"
   type        = string
 }
+variable "enable_services" {
+  description = "Enable the necessary APIs on the project.  When using an existing project, this can be set to false."
+  type        = bool
+  default     = true
+}
+
+variable "folder_id" {
+  description = "Folder ID where the project should be created. It can be skipped if already setting organization_id. Leave blank if the project should be created directly underneath the Organization node. "
+  type        = string
+  default     = ""
+}
+variable "ip_cidr_range" {
+  description = "Unique IP CIDR Range for AI Notebooks subnet"
+  type        = string
+  default     = "10.142.190.0/24"
+}
 
 variable "network_name" {
-  Description = "This name will be used for VPC and subnets created"
+  description = "This name will be used for VPC and subnets created"
   type        = string
   default     = "cromwell-vpc"
 }

@@ -1,65 +1,89 @@
-
-resource "google_compute_network" "vpc_network" {
-  name                    = var.network_name
-  auto_create_subnetworks = false
+data "google_compute_network" "default" {
+  count   = var.create_network ? 0 : 1
+  project = local.project.project_id
+  name    = var.network_name
 }
 
-resource "google_compute_subnetwork" "vpc_subnet" {
-  name                     = google_compute_network.vpc_network.name
-  ip_cidr_range            = "10.2.0.0/16"
-  region                   = "europe-west4"
-  network                  = google_compute_network.vpc_network.id
-  private_ip_google_access = true
+data "google_compute_subnetwork" "default" {
+  count   = var.create_network ? 0 : 1
+  project = local.project.project_id
+  name    = var.network_name
+  region  = local.region
 }
 
-resource "google_compute_firewall" "allow_iap" {
-  name    = "${var.network_name}-allow-iap"
-  network = google_compute_network.vpc_network.name
+module "vpc_cromwell" {
+  count   = var.create_network ? 1 : 0
+  source  = "terraform-google-modules/network/google"
+  version = "~> 3.0"
+
+  project_id   = local.project.project_id
+  network_name = var.network_name
+  routing_mode = "GLOBAL"
+  description  = "VPC Network created via Terraform"
+
+  subnets = [
+    {
+      subnet_name           = var.network_name
+      subnet_ip             = var.ip_cidr_range
+      subnet_region         = local.region
+      description           = "Subnetwork inside *vpc-analytics* VPC network, created via Terraform"
+      subnet_private_access = true
+    }
+  ]
+
+  firewall_rules = [
+    {
+      name        = "fw-cromwell-allow-internal"
+      description = "Firewall rule to allow traffic on all ports inside *vpc-cromwell* VPC network."
+      priority    = 65534
+      ranges      = ["10.0.0.0/8"]
+      direction   = "INGRESS"
+
+      allow = [{
+        protocol = "tcp"
+        ports    = ["0-65535"]
+      }]
+    },
+    {
+      name        = "fw-cromwell-allow-iap"
+      description = "Firewall rule to allow traffic on SSH and Cromwell port to IAP range"
+      priority    = 65534
+      ranges      = ["35.235.240.0/20"]
+      direction   = "INGRESS"
+      target_tags = ["cromwell-iap"]
+      allow = [{
+        protocol = "tcp"
+        ports    = ["22", "${var.cromwell_port}"]
+      }]
 
 
-  allow {
-    protocol = "tcp"
-    ports    = ["22", "8000"]
-  }
-  source_ranges = ["35.235.240.0/20"]
-  target_tags   = ["cromwell"]
+    }
+  ]
+
+  depends_on = [
+    google_project_service.enabled_services
+  ]
 }
 
-resource "google_compute_firewall" "allow_internal" {
-  name    = "${var.network_name}-allow-internal"
-  network = google_compute_network.vpc_network.name
 
 
-  allow {
-    protocol = "all"
-  }
-  source_ranges = [google_compute_subnetwork.vpc_subnet.ip_cidr_range]
-
-}
-
-resource "google_compute_router" "cromwell-nat-router" {
-  name    = "cromwell-nat-router"
-  project = var.project_id
-  region  = var.default_region
-  network = google_compute_network.vpc_network.name
-}
-
-resource "google_compute_router_nat" "cromwell-nat-gateway" {
-  name                               = "nat"
-  project                            = var.project_id
-  region                             = var.default_region
-  router                             = google_compute_router.cromwell-nat-router.name
-  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
-  nat_ip_allocate_option             = "AUTO_ONLY"
+module "cloud-nat" {
+  source        = "terraform-google-modules/cloud-nat/google"
+  name          = "${var.network_name}-nat"
+  project_id    = local.project.project_id
+  region        = local.region
+  network       = module.vpc_cromwell.0.network_name
+  router        = "${var.network_name}-nat-router"
+  create_router = true
 }
 
 module "private-service-access" {
   source        = "GoogleCloudPlatform/sql-db/google//modules/private_service_access"
   version       = "8.0.0"
-  project_id    = var.project_id
-  vpc_network   = google_compute_network.vpc_network.name
-  address       = "172.16.50.0"
-  prefix_length = 24
-  depends_on    = [google_project_service.private_service, google_compute_network.vpc_network]
+  project_id    = local.project.project_id
+  vpc_network   = module.vpc_cromwell.0.network_name
+  address       = split(var.db_service_network_cidr_range, "/")[0]
+  prefix_length = split(var.db_service_network_cidr_range, "/")[1]
+  depends_on    = [google_project_service.enabled_services]
 
 }
