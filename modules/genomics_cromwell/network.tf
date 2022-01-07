@@ -42,7 +42,7 @@ module "vpc_cromwell" {
       subnet_name           = var.network_name
       subnet_ip             = var.ip_cidr_range
       subnet_region         = local.region
-      description           = "Subnetwork inside *vpc-analytics* VPC network, created via Terraform"
+      description           = "Subnetwork inside Cromwell VPC network, created via Terraform"
       subnet_private_access = true
     }
   ]
@@ -99,6 +99,10 @@ module "private-service-access" {
   vpc_network   = module.vpc_cromwell.0.network_name
   address       = split("/", var.db_service_network_cidr_range)[0]
   prefix_length = split("/", var.db_service_network_cidr_range)[1]
-  depends_on    = [google_project_service.enabled_services]
+
+  depends_on    = [
+    google_project_service.enabled_services,
+    time_sleep.wait_120_seconds
+    ]
 
 }

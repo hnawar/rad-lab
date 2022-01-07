@@ -92,7 +92,7 @@ variable "cromwell_zones" {
 variable "db_service_network_cidr_range" {
   description = "CIDR range used for the private service range for CloudSQL"
   type        = string
-  default     = "172.10.50.0/24"
+  default     = "10.128.50.0/24"
 }
 
 variable "default_region" {
