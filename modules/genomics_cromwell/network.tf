@@ -97,8 +97,8 @@ module "private-service-access" {
   version       = "8.0.0"
   project_id    = local.project.project_id
   vpc_network   = module.vpc_cromwell.0.network_name
-  address       = split(var.db_service_network_cidr_range, "/")[0]
-  prefix_length = split(var.db_service_network_cidr_range, "/")[1]
+  address       = split("/", var.db_service_network_cidr_range)[0]
+  prefix_length = split("/", var.db_service_network_cidr_range)[1]
   depends_on    = [google_project_service.enabled_services]
 
 }

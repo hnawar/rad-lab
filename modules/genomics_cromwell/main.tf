@@ -117,6 +117,7 @@ resource "google_storage_bucket" "cromwell_workflow_bucket" {
   location                    = var.default_region
   force_destroy               = true
   uniform_bucket_level_access = true
+  project                     = local.project.project_id
 
   cors {
     origin          = ["http://user-scripts"]
@@ -133,7 +134,7 @@ resource "google_storage_bucket_object" "config" {
     cromwell_PAPI_location = var.cromwell_PAPI_location,
     cromwell_PAPI_endpoint = var.cromwell_PAPI_endpoint,
     requester_pay_project  = local.project.project_id,
-    cromwell_zones         = formatlist(" %s ", var.cromwell_zones)
+    cromwell_zones         = "['${join("', '", var.cromwell_zones)}']"
     cromwell_port          = var.cromwell_port,
     cromwell_db_ip         = module.cromwell-mysql-db.instance_ip_address[0].ip_address,
     cromwell_db_pass       = random_password.cromwell_db_pass.result
