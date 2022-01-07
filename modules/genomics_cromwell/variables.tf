@@ -103,7 +103,7 @@ variable "default_region" {
 variable "default_zone" {
   description = "The default zone where the CloudSQL, Compute Instance be deployed"
   type        = string
-  default = "us-central1-a"
+  default     = "us-central1-a"
 }
 variable "enable_services" {
   description = "Enable the necessary APIs on the project.  When using an existing project, this can be set to false."
@@ -144,3 +144,28 @@ variable "random_id" {
   type        = string
   default     = null
 }
+
+variable "set_external_ip_policy" {
+  description = "If true external IP Policy will be set to allow all"
+  type        = bool
+  default     = false
+}
+
+variable "set_restrict_vpc_peering_policy" {
+  description = "If true restrict VPC peering will be set to allow all"
+  type        = bool
+  default     = true
+}
+
+variable "set_shielded_vm_policy" {
+  description = "If true shielded VM Policy will be set to disabled"
+  type        = bool
+  default     = true
+}
+
+variable "set_trustedimage_project_policy" {
+  description = "If true trusted image projects will be set to allow all"
+  type        = bool
+  default     = true
+}
+
