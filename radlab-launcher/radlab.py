@@ -38,11 +38,10 @@ STATE_DELETE_DEPLOYMENT = "3"
 STATE_LIST_DEPLOYMENT = "4"
 
 def main(varcontents={}):
-
+    projid          = ""
     orgid           = ""
     folderid        = ""
     billing_acc     = ""
-    domain          = ""
     selected_module = ""
     state           = ""
 
@@ -53,22 +52,44 @@ def main(varcontents={}):
         # countdown(5)
         print("Login with Cloud Admin account...")
         os.system("gcloud auth application-default login")
+    # Setting up Project-ID
+    set_proj(projid)
 
+    # Listing / Selecting from available RAD Lab modules
     module_name = list_modules()
+    
+    # Validating user input Terraform variables against selected module
     validate_tfvars(varcontents, module_name)
-    state,env_path,tfbucket,orgid,billing_acc,folderid,domain,randomid = module_deploy_common_settings(module_name,setup_path,varcontents)
-    env(state, orgid, billing_acc, folderid, domain, env_path, randomid, tfbucket, selected_module)
+
+    # Setting up required attributes for any RAD Lab module deployment
+    state,env_path,tfbucket,orgid,billing_acc,folderid,randomid = module_deploy_common_settings(module_name,setup_path,varcontents)
+    
+    # Utilizing Terraform Wrapper for init / apply / destroy
+    env(state, orgid, billing_acc, folderid, env_path, randomid, tfbucket, selected_module)
 
     print("\nGCS Bucket storing Terrafrom Configs: "+ tfbucket +"\n")
     print("\nTERRAFORM DEPLOYMENT COMPLETED!!!\n")
+	
+def set_proj(projid):
+    projid = os.popen("gcloud config list --format 'value(core.project)' 2>/dev/null").read().strip()
+    if(projid != ""):
+        select_proj = input("\nWhich Project would you like to use for RAD Lab management (Example - Creating/Utilizing GCS bucket where Terraform states will be stored) ? :" + "\n[1] Currently set project - " + Fore.GREEN + projid + Style.RESET_ALL + "\n[2] Enter a different Project ID" +Fore.YELLOW + Style.BRIGHT + "\nChoose a number for the RAD Lab management Project" + Style.RESET_ALL + ': ').strip()
+        if(select_proj == '2'):
+            projid = input(Fore.YELLOW + Style.BRIGHT + "Enter the Project ID" + Style.RESET_ALL + ': ').strip()
+            os.system("gcloud config set project " + projid)
+        elif(select_proj != '1' and select_proj != '2'):
+            sys.exit(Fore.RED + "\nError Occured - INVALID choice.\n")
+    else:
+        projid = input(Fore.YELLOW + Style.BRIGHT + "\nEnter the Project ID for RAD Lab management" + Style.RESET_ALL + ': ').strip()
+        os.system("gcloud config set project " + projid)
+    print("\nProject ID (Selected) : " + Fore.GREEN + Style.BRIGHT + projid + Style.RESET_ALL)
 
-
-def env(state, orgid, billing_acc, folderid, domain, env_path, randomid, tfbucket, selected_module):
+def env(state, orgid, billing_acc, folderid, env_path, randomid, tfbucket, selected_module):
     tr = Terraform(working_dir=env_path)
     return_code, stdout, stderr = tr.init_cmd(capture_output=False)
 
     if(state == STATE_CREATE_DEPLOYMENT or state == STATE_UPDATE_DEPLOYMENT):
-        return_code, stdout, stderr = tr.apply_cmd(capture_output=False,auto_approve=True,var={'organization_id':orgid, 'billing_account_id':billing_acc, 'folder_id':folderid, 'domain':domain, 'random_id':randomid})
+        return_code, stdout, stderr = tr.apply_cmd(capture_output=False,auto_approve=True,var={'organization_id':orgid, 'billing_account_id':billing_acc, 'folder_id':folderid, 'random_id':randomid})
     elif(state == STATE_DELETE_DEPLOYMENT):
         return_code, stdout, stderr = tr.destroy_cmd(capture_output=False,auto_approve=True,var={'organization_id':orgid, 'billing_account_id':billing_acc, 'folder_id':folderid,'random_id':randomid})
 
@@ -82,7 +103,7 @@ def env(state, orgid, billing_acc, folderid, domain, env_path, randomid, tfbucke
 
             if glob.glob(env_path + '/*.tf'):
                 os.system('gsutil -q -m cp -r ' + env_path + '/*.tf ' + target_path)
-            if glob.glob(env_path + '/*.json'):
+            if glob.glob(env_path + '/*.json'):   
                 os.system('gsutil -q -m cp -r ' + env_path + '/*.json ' + target_path)
             if glob.glob(env_path + '/elk'):
                 os.system('gsutil -q -m cp -r ' + env_path + '/elk ' + target_path)
@@ -104,45 +125,47 @@ def select_state():
     else:
         sys.exit(Fore.RED + "\nError Occured - INVALID choice.\n")
 
-def basic_input(orgid, billing_acc, folderid, domain, randomid):
+def basic_input(orgid, billing_acc, folderid, randomid):
 
     print("\nEnter following info to start the setup and use the user which have Project Owner & Billing Account User roles:-")
 
     # Selecting Org ID
     if(orgid == ''):
         orgid = getorgid()
-    print("\nOrg ID (Selected) : " + Fore.GREEN + Style.BRIGHT + orgid + Style.RESET_ALL )
-
     # Org ID Validation
-    if (orgid.strip().isdecimal() == False) :
+    if (orgid.strip() and orgid.strip().isdecimal() == False) :
         sys.exit(Fore.RED + "\nError Occured - INVALID ORG ID\n")
-
-    # Selecting Billing Account
-    if(billing_acc == ''):
-        billing_acc = getbillingacc()
-    print("\nBilling Account (Selected) : " + Fore.GREEN + Style.BRIGHT + billing_acc + Style.RESET_ALL )
-
-    # Billing Account Validation
-    if (billing_acc.count('-') != 2) :
-        sys.exit(Fore.RED + "\nError Occured - INVALID Billing Account\n")
+   
+    print("\nOrg ID (Selected) : " + Fore.GREEN + Style.BRIGHT + orgid + Style.RESET_ALL )
 
     # Selecting Folder ID
     if(folderid == ''):
-        folderid = input(Fore.YELLOW + Style.BRIGHT + "\nFolder ID [Optional]"+ Style.RESET_ALL + ': ')
+        folderid = input(Fore.YELLOW + Style.BRIGHT + "\nFolder ID"+ Style.RESET_ALL + ': ').strip()
 
     # Folder ID Validation
     if (folderid.strip() and folderid.strip().isdecimal() == False):
         sys.exit(Fore.RED + "\nError Occured - INVALID FOLDER ID ACCOUNT\n")
 
-    # Fetching Domain name
-    if(folderid == ''):
-        domain = getdomain(orgid)
+    print("\nFolder ID (Selected) : " + Fore.GREEN + Style.BRIGHT + folderid + Style.RESET_ALL )
 
+    # Check if either Org ID or Folder ID is set.
+    if(orgid == '' and folderid == ''):
+        sys.exit(Fore.RED + "\nNeither Org ID nor Folder ID configured!\n")
+
+    # Selecting Billing Account
+    if(billing_acc == ''):
+        billing_acc = getbillingacc()
+    print("\nBilling Account (Selected) : " + Fore.GREEN + Style.BRIGHT + billing_acc + Style.RESET_ALL )  
+    
+    # Billing Account Validation
+    if (billing_acc.count('-') != 2) :
+        sys.exit(Fore.RED + "\nError Occured - INVALID Billing Account\n")
+    
     # Create Random Deployment ID
     if(randomid == ''):
         randomid = get_random_alphanumeric_string(4)
 
-    return orgid, billing_acc, folderid, domain, randomid
+    return orgid, billing_acc, folderid, randomid
 
 def create_env(env_path, orgid, billing_acc, folderid):
 
@@ -203,16 +226,16 @@ def get_random_alphanumeric_string(length):
 	# print("Random alphanumeric String is:", result_str)
 	return result_str
 
-def getdomain(orgid):
-    credentials = GoogleCredentials.get_application_default()
-    service = discovery.build('cloudresourcemanager', 'v1', credentials=credentials)
-    # The resource name of the Organization to fetch, e.g. "organizations/1234".
-    name = 'organizations/'+orgid
+# def getdomain(orgid):
+#     credentials = GoogleCredentials.get_application_default()
+#     service = discovery.build('cloudresourcemanager', 'v1', credentials=credentials)
+#     # The resource name of the Organization to fetch, e.g. "organizations/1234".
+#     name = 'organizations/'+orgid
 
-    request = service.organizations().get(name=name)
-    response = request.execute()
-    # print(response['displayName'])
-    return response['displayName']
+#     request = service.organizations().get(name=name)
+#     response = request.execute()
+#     # print(response['displayName'])
+#     return response['displayName']
 
 def getbillingacc():
 
@@ -251,8 +274,8 @@ def getbillingacc():
 
 def getorgid():
 
-    x = input("\nHow would you like to fetch the Org ID ?\n[1] Enter Manually\n[2] Select from the List\n" + Fore.YELLOW + Style.BRIGHT + "Choose a number for your choice"+ Style.RESET_ALL + ': ').strip()
-
+    x = input("\nHow would you like to fetch the Org ID ?\n[1] Enter Manually\n[2] Select from the List\n[3] Skip setting Org ID\n" + Fore.YELLOW + Style.BRIGHT + "Choose a number for your choice"+ Style.RESET_ALL + ': ').strip()
+    
     if(x == '1'):
         orgid = input(Fore.YELLOW + Style.BRIGHT + "Enter the Org ID ( Example format - 1234567890 )" + Style.RESET_ALL + ': ').strip()
         return orgid
@@ -276,11 +299,16 @@ def getorgid():
         # Take user input and get the corresponding item from the list
         inp = int(input(Fore.YELLOW + Style.BRIGHT + "Choose a number for Organization ID" + Style.RESET_ALL + ': '))
         if inp in range(1, len(org_ids)+1):
-            orgid = org_ids[inp-1]
+            orgid = org_ids[inp-1] 
             # print(orgid)
             return orgid
         else:
             sys.exit(Fore.RED + "\nError Occured - INVALID ORG ID SELECTED\n"+ Style.RESET_ALL)
+            
+    elif(x == '3'):
+        print("Skipped setting Org ID. Its now mandatory to set the Folder ID")
+        return ''
+
     else:
         sys.exit(Fore.RED + "\nError Occured - INVALID CHOICE\n"+ Style.RESET_ALL)
 
@@ -407,7 +435,6 @@ def list_modules():
             print(Fore.RED +'Missing README.md file for module: ' + module + Style.RESET_ALL)
         print_list = print_list + "["+ str(c) +"] " + first_line.strip() + Fore.GREEN + " (" +module + ")\n" + Style.RESET_ALL
         c = c+1
-
     # Selecting Module
     try:
         selected_module = input("\nList of available RAD Lab modules:\n"+print_list+"["+ str(c) +"] Exit\n"+ Fore.YELLOW + Style.BRIGHT + "Choose a number for the RAD Lab Module"+ Style.RESET_ALL + ': ').strip()
@@ -426,7 +453,6 @@ def list_modules():
     else:
         sys.exit(Fore.RED + "\nInvalid module")
 
-
 def module_deploy_common_settings(module_name,setup_path,varcontents):
     # Select Action to perform
     state = select_state()
@@ -435,14 +461,14 @@ def module_deploy_common_settings(module_name,setup_path,varcontents):
     tfbucket = getbucket(state.strip())
     print("\nGCS bucket for Terraform config & state (Selected) : " + Fore.GREEN + Style.BRIGHT + tfbucket + Style.RESET_ALL )
 
-    # Setting Org ID, Billing Account, Folder ID, Domain
+    # Setting Org ID, Billing Account, Folder ID
     if(state == STATE_CREATE_DEPLOYMENT):
 
         # Check for any overides of basic inputs from terraform.tfvars file
-        orgid, billing_acc, folderid, domain, randomid = check_basic_inputs_tfvars(varcontents)
+        orgid, billing_acc, folderid, randomid = check_basic_inputs_tfvars(varcontents)
 
         # Getting Base Inputs
-        orgid, billing_acc, folderid, domain, randomid = basic_input(orgid, billing_acc, folderid, domain, randomid)
+        orgid, billing_acc, folderid, randomid = basic_input(orgid, billing_acc, folderid, randomid)
 
         # Set environment path as deployment directory
         prefix = module_name+'_'+randomid
@@ -463,7 +489,7 @@ def module_deploy_common_settings(module_name,setup_path,varcontents):
         # Create file with billing/org/folder details
         create_env(env_path, orgid, billing_acc, folderid)
 
-        return state,env_path,tfbucket,orgid,billing_acc,folderid,domain,randomid
+        return state,env_path,tfbucket,orgid,billing_acc,folderid,randomid
 
     elif(state == STATE_UPDATE_DEPLOYMENT or state == STATE_DELETE_DEPLOYMENT):
 
@@ -486,10 +512,6 @@ def module_deploy_common_settings(module_name,setup_path,varcontents):
 
         # Get env values
         orgid, billing_acc, folderid = get_env(env_path)
-
-        # Fetching Domain name
-        domain = getdomain(orgid)
-
         # Set Terraform states remote backend as GCS
         settfstategcs(env_path,prefix,tfbucket)
 
@@ -502,7 +524,7 @@ def module_deploy_common_settings(module_name,setup_path,varcontents):
         if(state == STATE_DELETE_DEPLOYMENT):
             print("DELETING DEPLOYMENT...")
 
-        return state,env_path,tfbucket,orgid,billing_acc,folderid,domain,randomid
+        return state,env_path,tfbucket,orgid,billing_acc,folderid,randomid
 
     elif(state == STATE_LIST_DEPLOYMENT):
         list_radlab_deployments(tfbucket, module_name)
@@ -529,7 +551,7 @@ def validate_tfvars(varcontents, module_name):
         except:
             sys.exit(Fore.RED + 'variables.tf missing for module: ' + module_name)
 
-        # Check if an invalid variable is passed!
+        # Check if an invalid variable is passed! 
         if(status == False):
             sys.exit(Fore.RED + 'Variable: ' + key + ' passed in input file, do not exist in variables.tf file of '+ module_name +' module.')
     # print(varcontents)
@@ -544,7 +566,7 @@ def create_tfvars(env_path,varcontents):
         for var in varcontents:
             f.write(var.strip()+"="+varcontents[var].strip()+"\n" )
         f.close()
-    else:
+    else: 
         print("Skipping creation of terraform.tfvars as no input file for variables...")
 
 
@@ -562,15 +584,11 @@ def check_basic_inputs_tfvars(varcontents):
     except:
         folderid = ''
     try:
-        domain = varcontents['domain'].strip('"')
-    except:
-        domain = ''
-    try:
         randomid = varcontents['random_id'].strip('"')
     except:
         randomid = ''
 
-    return orgid, billing_acc, folderid, domain, randomid
+    return orgid, billing_acc, folderid, randomid
 
 def fetchvariables(filecontents):
     variables = {}
