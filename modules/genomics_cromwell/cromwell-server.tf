@@ -15,9 +15,10 @@
  */
 
 resource "google_compute_instance" "cromwell_server" {
+  project                   = local.project.project_id
   name                      = var.cromwell_server_instance_name
   machine_type              = var.cromwell_server_instance_type
-  zone                      = "europe-west4-a"
+  zone                      = var.default_zone
   allow_stopping_for_update = true
 
   boot_disk {
@@ -33,7 +34,7 @@ resource "google_compute_instance" "cromwell_server" {
 
   network_interface {
     network    = module.vpc_cromwell.0.network_name
-    subnetwork = module.vpc_cromwell.0.subnets[0].subnet_name
+    subnetwork = module.vpc_cromwell.0.subnets["${local.region}/${var.network_name}"].self_link
 
   }
   tags = ["cromwell-iap"]
