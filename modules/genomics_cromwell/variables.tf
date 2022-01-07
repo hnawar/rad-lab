@@ -53,7 +53,7 @@ variable "cromwell_PAPI_location" {
 variable "cromwell_port" {
   description = "Port Cromwell server will use for the REST API and web user interface."
   type        = string
-  default     = "us-central1"
+  default     = "8000"
 }
 variable "cromwell_sa_roles" {
   description = "List of roles granted to the cromwell service account. This server account will be used to run both the Cromwell server and workers as well."
@@ -92,17 +92,18 @@ variable "cromwell_zones" {
 variable "db_service_network_cidr_range" {
   description = "CIDR range used for the private service range for CloudSQL"
   type        = string
-  default     = "172.16.50.0/28"
+  default     = "172.10.50.0/24"
 }
 
 variable "default_region" {
   description = "The default region where the CloudSQL, Compute Instance and VPCs will be deployed"
   type        = string
-  default     = "us-cenrtal1"
+  default     = "us-central1"
 }
 variable "default_zone" {
   description = "The default zone where the CloudSQL, Compute Instance be deployed"
   type        = string
+  default = "us-central1-a"
 }
 variable "enable_services" {
   description = "Enable the necessary APIs on the project.  When using an existing project, this can be set to false."
@@ -116,7 +117,7 @@ variable "folder_id" {
   default     = ""
 }
 variable "ip_cidr_range" {
-  description = "Unique IP CIDR Range for AI Notebooks subnet"
+  description = "Unique IP CIDR Range for cromwell subnet"
   type        = string
   default     = "10.142.190.0/24"
 }

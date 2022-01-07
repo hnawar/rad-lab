@@ -14,15 +14,26 @@
  * limitations under the License.
  */
 
-output "Cromell_server_internal_IP" {
+output "project_id" {
+  description = "Project ID where resrouces where created"
+  value = local.project.project_id
+}
+output "cromwell_server_instance_id" {
+  description = "VM instance name running the Cromwell server"
+  value = google_compute_instance.cromwell_server.name
+}
+output "cromell_server_internal_IP" {
+  description = "Cromwell server private IP address"
   value = google_compute_instance.cromwell_server.network_interface[0].network_ip
-
 }
 
-output "Cromwell_service_account_email" {
+output "cromwell_service_account_email" {
+  description = "Email address of service account running the server and worker nodes"
   value = google_service_account.cromwell_service_account.email
 }
 
 output "GCS_Bucket_URL" {
+  description = "Google Cloud Storage Bucket configured for workflow execution"
   value = google_storage_bucket.cromwell_workflow_bucket.url
 }
+
