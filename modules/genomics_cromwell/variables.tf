@@ -137,7 +137,7 @@ variable "cromwell_sa_roles" {
   default = [
     "roles/batch.agentReporter",
     "roles/batch.jobsEditor", 
-    "roles/batch.serviceAgent,
+    "roles/batch.serviceAgent",
     "roles/cloudsql.client",
     "roles/logging.logWriter",
     "roles/logging.viewer", 
