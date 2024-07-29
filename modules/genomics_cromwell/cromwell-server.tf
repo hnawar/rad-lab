@@ -16,7 +16,7 @@
 
 # data "google_compute_image" "debian" {
 #   project = "debian-cloud"
-#   family  = "debian-10"
+#   family  = "debian-11"
 # }
 
 //Create Cromwell service account and assign required roles
