@@ -134,7 +134,16 @@ variable "cromwell_port" {
 variable "cromwell_sa_roles" {
   description = "List of roles granted to the cromwell service account. This server account will be used to run both the Cromwell server and workers as well. {{UIMeta group=3 order=11 updatesafe }}"
   type        = list(any)
-  default = ["roles/lifesciences.workflowsRunner", "roles/serviceusage.serviceUsageConsumer", "roles/storage.objectAdmin", "roles/cloudsql.client", "roles/browser"]
+  default = [
+    "roles/batch.agentReporter",
+    "roles/batch.jobsEditor", 
+    "roles/batch.serviceAgent",
+    "roles/cloudsql.client",
+    "roles/logging.logWriter",
+    "roles/logging.viewer", 
+    "roles/serviceusage.serviceUsageConsumer", 
+    "roles/storage.objectAdmin",  
+    "roles/browser"]
 }
 
 variable "cromwell_server_instance_name" {
@@ -152,7 +161,7 @@ variable "cromwell_server_instance_type" {
 variable "cromwell_version" {
   description = "Cromwell version that will be downloaded, for the latest release version, please check https://github.com/broadinstitute/cromwell/releases for the latest releases. {{UIMeta group=3 order=6 }}"
   type        = string
-  default     = "86"
+  default     = "87"
 
 }
 
@@ -189,7 +198,7 @@ variable "folder_id" {
 variable "ip_cidr_range" {
   description = "Unique IP CIDR Range for cromwell subnet. {{UIMeta group=2 order=3 }}"
   type        = string
-  default     = "10.142.190.0/24"
+  default     = "10.142.188.0/22"
 }
 
 variable "network_name" {
